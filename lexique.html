@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Traducteur Elfique Immersif</title>
+<style>
+body { font-family:"Trebuchet MS", Verdana,sans-serif; background:linear-gradient(to bottom,#f0f9f4,#d0e8d5); color:#0b3d0b; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh;}
+h1 { font-family:"Papyrus", serif; font-size:3em; margin-top:40px; color:#0a2d0a; text-shadow:1px 1px 3px #a0d0a0;}
+.container { background:rgba(255,255,255,0.85); border-radius:15px; padding:25px; margin:20px; width:90%; max-width:700px; box-shadow:0 0 20px rgba(0,0,0,0.2);}
+textarea { width:100%; height:100px; border-radius:8px; border:1px solid #88c088; padding:10px; font-size:1.1em; resize:vertical; background:#f7fff7;}
+button { margin-top:10px; margin-right:10px; padding:10px 20px; font-size:1.1em; background:linear-gradient(to bottom,#a0d0a0,#70a070); border:none; border-radius:10px; color:#fff; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.2); transition:all 0.2s ease;}
+button:hover { background:linear-gradient(to bottom,#70a070,#50a050); transform:scale(1.05);}
+#resultat { margin-top:20px; font-size:1.4em; font-style:italic; color:#134613; background:#f0fff0; padding:15px; border-radius:10px; min-height:50px; line-height:1.5em; white-space:pre-wrap;}
+#lexiqueContainer { margin-top:20px; max-height:200px; overflow-y:auto; background:#f7fff7; padding:10px; border-radius:10px; border:1px solid #88c088;}
+#searchLex { width:100%; padding:5px; margin-bottom:10px; border-radius:5px; border:1px solid #88c088;}
+footer { margin-top:auto; padding:10px; font-size:0.9em; color:#084008; text-align:center;}
+@media(max-width:500px){h1{font-size:2em;} button{font-size:1em;padding:8px 15px;margin-top:8px;margin-right:5px;} #resultat{font-size:1.1em;}}
+</style>
+</head>
+<body>
+
+<h1>Traducteur Elfique</h1>
+
+<div class="container">
+<textarea id="frInput" placeholder="Écris une phrase en français ici..."></textarea><br>
+<button id="translateBtn">Traduire</button>
+<button id="viewLexiconBtn">Voir lexique complet</button>
+<button id="resetLexiconBtn">Réinitialiser le lexique</button>
+<button id="exportLexiconBtn">Exporter vers Google Sheets</button>
+<button id="importLexiconBtn">Importer depuis Google Sheets</button>
+<input type="text" id="searchLex" placeholder="Rechercher dans le lexique...">
+<div id="lexiqueContainer"></div>
+<div id="resultat"></div>
+</div>
+
+<footer>Lexique auto-apprenant & immersif</footer>
+
+<script>
+/* =================== TRADUCTEUR ELF + LEXIQUE + CLOUD + AFFICHAGE =================== */
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyfUCH3qKMJQa_geOWVjnhQ5qbTsDhKJcKQTNEarR21grSc5kqzsSVG1XyvaPttb3yzag/exec"; // Remplace par ton URL Apps Script
+
+/* 1. Lexique de base */
+const lexiqueBase = {
+  "nuit":"nar","jour":"ar","blanc":"ar","gris":"gil","argenté":"gilar","noir":"niel","aube":"vanar","or":"gala",
+  "brume":"gileth","ténèbres":"nielor","ombre":"lanar","crépuscule":"gilnar",
+  "noble": "syl","noblesse": "syldar","prince": "lanasyl","roi": "anasyl","champion": "danasyl",
+  "dieu": "valar",
+  "je":"mi","tu":"ti","il":"sa","elle":"sa","nous":"men","vous":"ven","ils":"serin","elles":"serin",
+  "être":"era","suis":"era","es":"era","est":"era","sommes":"era","êtes":"era","sont":"era",
+  "avoir":"vara","ai":"vara","as":"vara","a":"vara","avons":"vara","avez":"vara","ont":"vara",
+  "aller":"lira","venir":"qira","faire":"orna","voir":"mirë","dire":"telrë","lever": "velei","tomber": "veniel",
+  "espoir":"orea"
+};
+
+/* 2. Lexique persistant */
+let lexique = {...lexiqueBase, ...JSON.parse(localStorage.getItem("elfiqueLexique")||"{}")};
+function sauvegarderLexique(){localStorage.setItem("elfiqueLexique", JSON.stringify(lexique));}
+
+/* 3. Pluriel */
+function estPluriel(mot){return mot.endsWith("s")&&!mot.endsWith("us");}
+function plurielElfique(mot){return mot.endsWith("in")?mot:mot+"in";}
+
+/* 4. Génération harmonisée */
+function genererMotElfique(motFr, syllabesUtilisees, terminaisonsUtilisees){
+  const racines=["ar","nar","gil","syl","niel","val","lu","el","lin"];
+  const suffixes=["el","en","ion","or","ath","iel","ys","lin","ar","ë"];
+  let mot, essais=0;
+  do{
+    const r=racines[Math.floor(Math.random()*racines.length)];
+    const s=suffixes[Math.floor(Math.random()*suffixes.length)];
+    mot=r+s;
+    essais++;
+    if(essais>20) break;
+  }while(syllabesUtilisees.has(mot.slice(0,2)) || terminaisonsUtilisees.has(mot.slice(-2)));
+  syllabesUtilisees.add(mot.slice(0,2));
+  terminaisonsUtilisees.add(mot.slice(-2));
+  lexique[motFr]=mot;
+  sauvegarderLexique();
+  return mot;
+}
+
+/* 5. Traduction */
+function traduireElfique(phrase){
+  const mots=phrase.toLowerCase().replace(/[.,!?;:]/g,"").split(/\s+/);
+  const resultat=[];
+  const syllabesUtilisees=new Set();
+  const terminaisonsUtilisees=new Set();
+  for(let mot of mots){
+    let traduction;
+    if(lexique[mot]){
+      traduction=lexique[mot];
+      syllabesUtilisees.add(traduction.slice(0,2));
+      terminaisonsUtilisees.add(traduction.slice(-2));
+    }else{
+      traduction=genererMotElfique(mot, syllabesUtilisees, terminaisonsUtilisees);
+    }
+    if(estPluriel(mot)) traduction=plurielElfique(traduction);
+    resultat.push(traduction);
+  }
+  return resultat.join(" ");
+}
+
+/* 6. Normalisation pour tri alphabétique */
+function normaliser(str){
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+}
+
+/* 7. Affichage lexique avec recherche et tri */
+const lexContainer = document.getElementById("lexiqueContainer");
+const searchLex = document.getElementById("searchLex");
+let triPar='fr', ordreAsc=true;
+
+function afficherLexique(filter=""){
+  lexContainer.innerHTML="";
+  const entries = Object.entries(lexique).filter(([fr, el])=>{
+    return !filter || fr.includes(filter.toLowerCase()) || el.includes(filter.toLowerCase());
+  });
+  entries.sort((a,b)=>{
+    let valA = triPar==='fr'?a[0]:a[1];
+    let valB = triPar==='fr'?b[0]:b[1];
+    valA = normaliser(valA);
+    valB = normaliser(valB);
+    if(valA<valB) return ordreAsc?-1:1;
+    if(valA>valB) return ordreAsc?1:-1;
+    return 0;
+  });
+  entries.forEach(([fr,el])=>{
+    const div=document.createElement("div");
+    div.textContent=`${fr} → ${el}`;
+    lexContainer.appendChild(div);
+  });
+}
+
+searchLex.addEventListener("input",()=>afficherLexique(searchLex.value));
+
+/* 8. Interface */
+const input=document.getElementById("frInput");
+const btn=document.getElementById("translateBtn");
+const output=document.getElementById("resultat");
+const viewLexiconBtn=document.getElementById("viewLexiconBtn");
+const resetLexiconBtn=document.getElementById("resetLexiconBtn");
+const exportLexiconBtn=document.getElementById("exportLexiconBtn");
+const importLexiconBtn=document.getElementById("importLexiconBtn");
+
+btn.addEventListener("click",()=>{
+  const fr=input.value.trim();
+  output.innerText=fr?traduireElfique(fr):"";
+});
+
+/* Voir lexique */
+viewLexiconBtn.addEventListener("click",()=>afficherLexique());
+
+/* Réinitialiser lexique */
+resetLexiconBtn.addEventListener("click",()=>{
+  if(confirm("Voulez-vous vraiment réinitialiser le lexique (mots auto-générés supprimés) ?")){
+    localStorage.removeItem("elfiqueLexique");
+    lexique={...lexiqueBase};
+    afficherLexique();
+    alert("Lexique réinitialisé !");
+  }
+});
+
+/* Export vers Google Sheets */
+exportLexiconBtn.addEventListener("click", async ()=>{
+  try{
+    const resp=await fetch(GOOGLE_SCRIPT_URL,{method:"POST",body:JSON.stringify(lexique)});
+    const data=await resp.json();
+    alert("Lexique envoyé vers Google Sheets !");
+  }catch(e){alert("Erreur lors de l'export : "+e);}
+});
+
+/* Import depuis Google Sheets */
+importLexiconBtn.addEventListener("click", async ()=>{
+  try{
+    const resp=await fetch(GOOGLE_SCRIPT_URL);
+    const data=await resp.json();
+    data.forEach(pair=>{lexique[pair.fr]=pair.el;});
+    sauvegarderLexique();
+    afficherLexique();
+    alert("Lexique importé depuis Google Sheets !");
+  }catch(e){alert("Erreur lors de l'import : "+e);}
+});
+
+/* Initial display */
+afficherLexique();
+</script>
+
+</body>
+</html>
