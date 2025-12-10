@@ -185,6 +185,33 @@ function traduireElfique(phrase){
   return resultat.join(" ");
 }
 
+/* 7. Affichage lexique avec recherche et tri */
+const lexContainer = document.getElementById("lexiqueContainer");
+const searchLex = document.getElementById("searchLex");
+let triPar='fr', ordreAsc=true;
+
+function afficherLexique(filter=""){
+  lexContainer.innerHTML="";
+  const entries = Object.entries(lexique).filter(([fr, el])=>{
+    return !filter || fr.includes(filter.toLowerCase()) || el.includes(filter.toLowerCase());
+  });
+  entries.sort((a,b)=>{
+    let valA = triPar==='fr'?a[0]:a[1];
+    let valB = triPar==='fr'?b[0]:b[1];
+    valA = normaliser(valA);
+    valB = normaliser(valB);
+    if(valA<valB) return ordreAsc?-1:1;
+    if(valA>valB) return ordreAsc?1:-1;
+    return 0;
+  });
+  entries.forEach(([fr,el])=>{
+    const div=document.createElement("div");
+    div.textContent=`${fr} → ${el}`;
+    lexContainer.appendChild(div);
+  });
+}
+
+searchLex.addEventListener("input",()=>afficherLexique(searchLex.value));
 /* 6. Interface */
 const input = document.getElementById("frInput");
 const btn = document.getElementById("translateBtn");
@@ -201,11 +228,7 @@ btn.addEventListener("click", ()=>{
 });
 
 /* Voir lexique */
-viewLexiconBtn.addEventListener("click", ()=>{
-  let texte = "";
-  Object.keys(lexique).sort().forEach(k => { texte += `${k} → ${lexique[k]}\n`; });
-  alert(texte || "Lexique vide !");
-});
+viewLexiconBtn.addEventListener("click",()=>afficherLexique());
 
 /* Réinitialiser lexique */
 resetLexiconBtn.addEventListener("click", ()=>{
