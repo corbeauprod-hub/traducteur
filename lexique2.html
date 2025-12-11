@@ -108,7 +108,7 @@ footer {
 const lexiqueBase = {
   "nuit": "nar","jour": "ar","blanc": "ar","gris": "gil","argenté": "gilar","noir": "niel",
   "brume": "gileth","ténèbres": "nielor","crépuscule": "gilnar",
-  "noble": "syl","noblesse": "sylar","prince": "sylor",
+  "noble": "syl","noblesse": "silistra","prince": "lana","roi": "ana","héros": "dana",
   "je": "mi","tu": "ti","il": "sa","elle": "sa","nous": "men","vous": "ven","ils": "serin","elles": "serin",
   "être": "era","suis": "era","es": "era","est": "era","sommes": "era","êtes": "era","sont": "era",
   "avoir": "vara","ai": "vara","as": "vara","a": "vara","avons": "vara","avez": "vara","ont": "vara",
@@ -135,14 +135,16 @@ function plurielElfique(mot){return mot.endsWith("in")?mot:mot+"in";}
 
 /* 4. Génération mot elfique harmonisé */
 function genererMotElfique(motFr, syllabesUtilisees, terminaisonsUtilisees){
-  const racines=["ar","nar","gil","syl","niel","val","lu","el","lin"];
-  const suffixes=["el","en","ion","or","ath","iel","ys","lin","ar","ë"];
+  const racines=["ar","nar","gil","sol","niel","val","lu","el","lin","an","mel","bel","ban","bal"];
+  const middle=["","","","","","","","","","","am","ma","nor","del","ren","fil","fen","dan","el","ang","thar","cor"];
+  const suffixes=["el","en","ion","or","ath","iel","ys","lin","ar","ë","an","dil"];
   let mot;
   let essais = 0;
   do {
     const r = racines[Math.floor(Math.random()*racines.length)];
+    const m = middle[Math.floor(Math.random()*middle.length)];
     const s = suffixes[Math.floor(Math.random()*suffixes.length)];
-    mot = r+s;
+    mot = r+m+s;
 
     // Eviter répétition syllabe initiale et finale
     const debut = mot.slice(0,2);
