@@ -148,24 +148,20 @@ function genererMotElfique(motFr, syllabesUtilisees, terminaisonsUtilisees){
     const debut = mot.slice(0,2);
     const fin = mot.slice(-2);
     essais++;
-
-if(essais>50) break;
-
-    /* 🔥 ANTI-DOUBLONS AJOUTÉ ICI */
+    if(essais>20) break; // éviter boucle infinie
+        /* 🔥 ANTI-DOUBLONS AJOUTÉ ICI */
     const existeDeja = Object.values(lexique).includes(mot);
-    if(existeDeja) continue;
-
-  }while(
-      syllabesUtilisees.has(mot.slice(0,2)) ||
-      terminaisonsUtilisees.has(mot.slice(-2))
-  );
+   if(existeDeja) continue;
+  } while(syllabesUtilisees.has(mot.slice(0,2)) || terminaisonsUtilisees.has(mot.slice(-2)));
 
   syllabesUtilisees.add(mot.slice(0,2));
   terminaisonsUtilisees.add(mot.slice(-2));
-
   lexique[motFr] = mot;
   sauvegarderLexique();
   return mot;
+
+
+
 }
 
 /* 5. Traduction phrase avec harmonisation */
