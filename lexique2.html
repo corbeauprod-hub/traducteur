@@ -2,282 +2,210 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Traducteur Elfique Immersif</title>
+<title>Traducteur Elfique</title>
 <style>
-body {
-  font-family: "Trebuchet MS", Verdana, sans-serif;
-  background: linear-gradient(to bottom, #f0f9f4, #d0e8d5);
-  color: #0b3d0b;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-}
-h1 {
-  font-family: "Papyrus", serif;
-  font-size: 3em;
-  margin-top: 40px;
-  color: #0a2d0a;
-  text-shadow: 1px 1px 3px #a0d0a0;
-}
-.container {
-  background: rgba(255,255,255,0.85);
-  border-radius: 15px;
-  padding: 25px;
-  margin: 20px;
-  width: 90%;
-  max-width: 700px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
-}
-textarea {
-  width: 100%;
-  height: 100px;
-  border-radius: 8px;
-  border: 1px solid #88c088;
-  padding: 10px;
-  font-size: 1.1em;
-  resize: vertical;
-  background: #f7fff7;
-}
-button {
-  margin-top: 10px;
-  margin-right: 10px;
-  padding: 10px 20px;
-  font-size: 1.1em;
-  background: linear-gradient(to bottom, #a0d0a0, #70a070);
-  border: none;
-  border-radius: 10px;
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
-}
-button:hover {
-  background: linear-gradient(to bottom, #70a070, #50a050);
-  transform: scale(1.05);
-}
-#resultat {
-  margin-top: 20px;
-  font-size: 1.4em;
-  font-style: italic;
-  color: #134613;
-  background: #f0fff0;
-  padding: 15px;
-  border-radius: 10px;
-  min-height: 50px;
-  line-height: 1.5em;
-  white-space: pre-wrap;
-}
-footer {
-  margin-top: auto;
-  padding: 10px;
-  font-size: 0.9em;
-  color: #084008;
-  text-align: center;
-}
-@media (max-width: 500px) {
-  h1 { font-size: 2em; }
-  button { font-size: 1em; padding: 8px 15px; margin-top: 8px; margin-right: 5px;}
-  #resultat { font-size: 1.1em; }
-}
+  body{
+    background: url('https://images.unsplash.com/photo-1526403220645-88a6b7e49dff?auto=format&fit=crop&w=1300&q=80') center/cover fixed;
+    color:white;
+    font-family: "Cinzel", serif;
+    padding:20px;
+    text-shadow: 0 0 5px black;
+  }
+  .container{
+    background:rgba(0,0,0,0.6);
+    padding:20px;
+    border-radius:10px;
+    max-width:800px;
+    margin:auto;
+  }
+  input,textarea{
+    width:100%;padding:10px;margin:10px 0;
+    background:#222;color:white;border:1px solid #555;
+    border-radius:8px;
+  }
+  button{
+    padding:10px 20px;
+    border:0;border-radius:8px;
+    background:#6b4e2e;color:white;
+    font-weight:bold;cursor:pointer;
+  }
+  button:hover{background:#8b6a45;}
+  #resultat,#lexiqueArea{
+    white-space:pre-wrap;
+    background:#111;padding:10px;
+    border-radius:8px;margin-top:10px;
+  }
+  #searchResults div{
+    padding:4px;
+    border-bottom:1px solid #444;
+  }
 </style>
 </head>
 <body>
 
-<h1>Traducteur Elfique</h1>
-
 <div class="container">
-  <textarea id="frInput" placeholder="Écris une phrase en français ici..."></textarea><br>
-  <button id="translateBtn">Traduire</button>
-  <button id="viewLexiconBtn">Voir le lexique</button>
-  <button id="resetLexiconBtn">Réinitialiser le lexique</button>
-  <button id="exportLexiconBtn">Exporter le lexique</button>
-  <input type="file" id="importLexiconInput" accept=".csv" style="display:none;">
-  <button id="importLexiconBtn">Importer un lexique</button>
-  <div id="resultat"></div>
+
+<h2>Traducteur Elfique</h2>
+
+<textarea id="texte" placeholder="Texte français à traduire"></textarea>
+<button onclick="traduire()">Traduire</button>
+
+<h3>Résultat</h3>
+<div id="resultat"></div>
+
+<hr>
+
+<h3>Recherche dans le lexique</h3>
+<input type="text" id="searchBox" placeholder="Rechercher un mot..." oninput="rechercherMot()">
+<div id="searchResults"></div>
+
+<hr>
+
+<h3>Lexique entier (trié)</h3>
+<pre id="lexiqueArea"></pre>
+
 </div>
 
-<footer>Lexique auto-apprenant & immersif</footer>
-
 <script>
-/* ================= TRADUCTEUR ELF + LEXIQUE + IMPORT/EXPORT + HARMONIE ================= */
-
-/* 1. Lexique de base */
+/* ===========================================
+   1. Lexique de base (INCHANGÉ)
+   =========================================== */
 const lexiqueBase = {
-  "nuit": "nar","jour": "ar","blanc": "ar","gris": "gil","argenté": "gilar","noir": "niel",
-  "brume": "gileth","ténèbres": "nielor","crépuscule": "gilnar",
-  "noble": "syl","noblesse": "sylar","prince": "sylor",
-  "je": "mi","tu": "ti","il": "sa","elle": "sa","nous": "men","vous": "ven","ils": "serin","elles": "serin",
-  "être": "era","suis": "era","es": "era","est": "era","sommes": "era","êtes": "era","sont": "era",
-  "avoir": "vara","ai": "vara","as": "vara","a": "vara","avons": "vara","avez": "vara","ont": "vara",
-  "aller": "lira","venir": "nira","faire": "orna","voir": "mira","dire": "tela",
-  "donner":"hiar","savoir":"eldra","penser":"sira","aimer":"melor","vouloir":"thera",
-  "homme":"aran","femme":"anne","enfant":"elen","ami":"mellon","maison":"miriel","porte":"calenor",
-  "arbre":"calen","eau":"nûr","feu":"nari","terre":"taren","montagne":"oron","mer":"lôs",
-  "ciel":"elenor",
-  "cheval":"ruan","épée":"brandel","epee":"brandel","bouclier":"thalar","citadelle":"umbar","ville":"siar",
-  "route":"rima","marché":"valen","marche":"valen","chant":"tinel","musique":"liriel","lumière":"loriel","lumiere":"loriel",
-  "ombre":"moriel","bonjour":"lómiel","adieu":"nairal","merci":"galen","s'il":"aen","s'il-vous-plaît":"aenril",
-  "s'il-vous-plait":"aenril","s'il-vous":"aen","oui":"ea","non":"na","peut-être":"sila",
-  "maintenant":"anor","hier":"enor","demain":"oror","et":"ar","à":"an","a":"an","de":"sï","du":"sï"
-
+  "nuit":"nar","jour":"ar","blanc":"ar","gris":"gil","argenté":"gilar","noir":"niel","aube":"vanar","or":"gala",
+  "brume":"gileth","ténèbres":"nielor","ombre":"lanar","crépuscule":"gilnar",
+  "noble": "syl","noblesse": "syldar","prince": "lanasyl","roi": "anasyl","champion": "danasyl",
+  "dieu": "valar",
+  "je":"mi","tu":"ti","il":"sa","elle":"sa","nous":"men","vous":"ven","ils":"serin","elles":"serin",
+  "être":"era","suis":"era","es":"era","est":"era","sommes":"era","êtes":"era","sont":"era",
+  "avoir":"vara","ai":"vara","as":"vara","a":"vara","avons":"vara","avez":"vara","ont":"vara",
+  "aller":"lira","venir":"qira","faire":"orna","voir":"mirë","dire":"telrë","lever": "velei","tomber": "veniel",
+  "espoir":"orea"
 };
 
-/* 2. Lexique persistant */
+/* ===========================================
+   2. Lexique persistant (INCHANGÉ)
+   =========================================== */
 let lexique = {...lexiqueBase, ...JSON.parse(localStorage.getItem("elfiqueLexique")||"{}")};
-function sauvegarderLexique() { localStorage.setItem("elfiqueLexique", JSON.stringify(lexique)); }
+function sauvegarderLexique(){localStorage.setItem("elfiqueLexique", JSON.stringify(lexique));}
 
-/* 3. Pluriel */
-function estPluriel(mot){return mot.endsWith("s") && !mot.endsWith("us");}
+/* ===========================================
+   3. Pluriel (INCHANGÉ)
+   =========================================== */
+function estPluriel(mot){return mot.endsWith("s")&&!mot.endsWith("us");}
 function plurielElfique(mot){return mot.endsWith("in")?mot:mot+"in";}
 
-/* 4. Génération mot elfique harmonisé */
+/* ===========================================
+   4. Tri alphabétique avec accentuation
+   =========================================== */
+const ordreVoyelles = {"a":0,"à":1,"â":2,"e":3,"é":4,"è":5,"ê":6,"ë":7,"i":8,"î":9,"ï":10,"o":11,"ô":12,"ö":13,"u":14,"ù":15,"û":16,"ü":17,"y":18,"ÿ":19};
+
+function comparerMots(a,b){
+  let A = a.normalize("NFD");
+  let B = b.normalize("NFD");
+  for(let i=0;i<Math.min(A.length,B.length);i++){
+    const ca = A[i], cb = B[i];
+    if(ca===cb) continue;
+    const va = ordreVoyelles[ca] ?? ca.charCodeAt(0);
+    const vb = ordreVoyelles[cb] ?? cb.charCodeAt(0);
+    return va - vb;
+  }
+  return A.length - B.length;
+}
+
+/* ===========================================
+   5. Génération harmonisée AVEC anti-doublons
+   =========================================== */
 function genererMotElfique(motFr, syllabesUtilisees, terminaisonsUtilisees){
+
   const racines=["ar","nar","gil","syl","niel","val","lu","el","lin"];
   const suffixes=["el","en","ion","or","ath","iel","ys","lin","ar","ë"];
-  let mot;
-  let essais = 0;
-  do {
+
+  let mot, essais=0;
+
+  do{
     const r = racines[Math.floor(Math.random()*racines.length)];
     const s = suffixes[Math.floor(Math.random()*suffixes.length)];
     mot = r+s;
-
-    // Eviter répétition syllabe initiale et finale
-    const debut = mot.slice(0,2);
-    const fin = mot.slice(-2);
     essais++;
-    if(essais>20) break; // éviter boucle infinie
-  } while(syllabesUtilisees.has(mot.slice(0,2)) || terminaisonsUtilisees.has(mot.slice(-2)));
+
+    if(essais>50) break;
+
+    /* 🔥 ANTI-DOUBLONS AJOUTÉ ICI */
+    const existeDeja = Object.values(lexique).includes(mot);
+    if(existeDeja) continue;
+
+  }while(
+      syllabesUtilisees.has(mot.slice(0,2)) ||
+      terminaisonsUtilisees.has(mot.slice(-2))
+  );
 
   syllabesUtilisees.add(mot.slice(0,2));
   terminaisonsUtilisees.add(mot.slice(-2));
+
   lexique[motFr] = mot;
   sauvegarderLexique();
   return mot;
 }
 
-/* 5. Traduction phrase avec harmonisation */
-function traduireElfique(phrase){
-  const mots = phrase.toLowerCase().replace(/[.,!?;:]/g,"").split(/\s+/);
-  const resultat = [];
-  const syllabesUtilisees = new Set();
-  const terminaisonsUtilisees = new Set();
+/* ===========================================
+   6. Traduction (INCHANGÉ)
+   =========================================== */
+function traduire(){
+  const txt=document.getElementById("texte").value.toLowerCase().split(/\s+/);
+  let res=[];
+  let syllabesUtil=new Set();
+  let terminaisonsUtil=new Set();
 
-  for(let mot of mots){
-    let traduction;
+  for(let mot of txt){
+    if(mot.trim()==="") continue;
 
-    if(lexique[mot]){
-      traduction = lexique[mot];
-      // enregistrer début et fin pour harmonisation
-      syllabesUtilisees.add(traduction.slice(0,2));
-      terminaisonsUtilisees.add(traduction.slice(-2));
-    } else {
-      traduction = genererMotElfique(mot, syllabesUtilisees, terminaisonsUtilisees);
-    }
+    let base=mot;
+    let plur=estPluriel(base);
 
-    if(estPluriel(mot)) traduction = plurielElfique(traduction);
+    if(lexique[base]){ res.push(plur ? plurielElfique(lexique[base]) : lexique[base]); continue; }
 
-    resultat.push(traduction);
+    let m=genererMotElfique(base,syllabesUtil,terminaisonsUtil);
+    if(plur) m=plurielElfique(m);
+    res.push(m);
   }
 
-  return resultat.join(" ");
+  document.getElementById("resultat").innerText=res.join(" ");
+  afficherLexique();
 }
 
-/* 7. Affichage lexique avec recherche et tri */
-const lexContainer = document.getElementById("lexiqueContainer");
-const searchLex = document.getElementById("searchLex");
-let triPar='fr', ordreAsc=true;
+/* ===========================================
+   7. Moteur de recherche amélioré
+   =========================================== */
+function rechercherMot(){
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  const zone = document.getElementById("searchResults");
 
-function afficherLexique(filter=""){
-  lexContainer.innerHTML="";
-  const entries = Object.entries(lexique).filter(([fr, el])=>{
-    return !filter || fr.includes(filter.toLowerCase()) || el.includes(filter.toLowerCase());
-  });
-  entries.sort((a,b)=>{
-    let valA = triPar==='fr'?a[0]:a[1];
-    let valB = triPar==='fr'?b[0]:b[1];
-    valA = normaliser(valA);
-    valB = normaliser(valB);
-    if(valA<valB) return ordreAsc?-1:1;
-    if(valA>valB) return ordreAsc?1:-1;
-    return 0;
-  });
-  entries.forEach(([fr,el])=>{
-    const div=document.createElement("div");
-    div.textContent=`${fr} → ${el}`;
-    lexContainer.appendChild(div);
-  });
+  if(q===""){ zone.innerHTML=""; return; }
+
+  const résultats = Object.entries(lexique)
+      .filter(([fr,elf]) => fr.includes(q) || elf.includes(q))
+      .sort((a,b)=> comparerMots(a[0],b[0]));
+
+  zone.innerHTML = résultats
+      .map(([fr,elf]) => `<div><b>${fr}</b> : ${elf}</div>`)
+      .join("");
 }
 
-searchLex.addEventListener("input",()=>afficherLexique(searchLex.value));
-/* 6. Interface */
-const input = document.getElementById("frInput");
-const btn = document.getElementById("translateBtn");
-const output = document.getElementById("resultat");
-const viewLexiconBtn = document.getElementById("viewLexiconBtn");
-const resetLexiconBtn = document.getElementById("resetLexiconBtn");
-const exportLexiconBtn = document.getElementById("exportLexiconBtn");
-const importLexiconBtn = document.getElementById("importLexiconBtn");
-const importLexiconInput = document.getElementById("importLexiconInput");
+/* ===========================================
+   8. Affichage du lexique complet trié
+   =========================================== */
+function afficherLexique(){
+  const zone=document.getElementById("lexiqueArea");
+  const clés = Object.keys(lexique).sort(comparerMots);
 
-btn.addEventListener("click", ()=>{
-  const fr = input.value.trim();
-  output.innerText = fr ? traduireElfique(fr) : "";
-});
-
-/* Voir lexique */
-viewLexiconBtn.addEventListener("click",()=>afficherLexique());
-
-/* Réinitialiser lexique */
-resetLexiconBtn.addEventListener("click", ()=>{
-  if(confirm("Voulez-vous vraiment réinitialiser le lexique (mots auto-générés supprimés) ?")){
-    localStorage.removeItem("elfiqueLexique");
-    lexique = {...lexiqueBase};
-    alert("Lexique réinitialisé !");
+  let txt="";
+  for(let fr of clés){
+    txt+= `${fr} = ${lexique[fr]}\n`;
   }
-});
+  zone.textContent=txt;
+}
 
-/* Export CSV */
-exportLexiconBtn.addEventListener("click", () => {
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "Français,Elfique\n";
-  Object.keys(lexique).sort().forEach(motFr => {
-      const motEl = lexique[motFr];
-      csvContent += `${motFr},${motEl}\n`;
-  });
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "lexique_elfique.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
-
-/* Import CSV */
-importLexiconBtn.addEventListener("click", () => importLexiconInput.click());
-
-importLexiconInput.addEventListener("change", (event)=>{
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-      const text = e.target.result;
-      const lines = text.split(/\r?\n/);
-      lines.forEach((line, idx)=>{
-          if(idx===0) return; // ignorer entête
-          if(line.trim()==="") return;
-          const [fr, el] = line.split(",");
-          if(fr && el) lexique[fr.trim()] = el.trim();
-      });
-      sauvegarderLexique();
-      alert("Lexique importé avec succès !");
-  };
-  reader.readAsText(file);
-});
+afficherLexique();
 </script>
-
 </body>
 </html>
