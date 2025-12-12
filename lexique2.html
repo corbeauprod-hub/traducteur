@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Traducteur Elfique Immersif</title>
+
 <style>
 body {
   font-family: "Trebuchet MS", Verdana, sans-serif;
@@ -41,9 +43,16 @@ textarea {
   resize: vertical;
   background: #f7fff7;
 }
+
+/* Boutons regroupés et responsives */
+.boutons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
 button {
-  margin-top: 10px;
-  margin-right: 10px;
   padding: 10px 20px;
   font-size: 1.1em;
   background: linear-gradient(to bottom, #a0d0a0, #70a070);
@@ -58,6 +67,7 @@ button:hover {
   background: linear-gradient(to bottom, #70a070, #50a050);
   transform: scale(1.05);
 }
+
 #resultat {
   margin-top: 20px;
   font-size: 1.4em;
@@ -70,6 +80,7 @@ button:hover {
   line-height: 1.5em;
   white-space: pre-wrap;
 }
+
 footer {
   margin-top: auto;
   padding: 10px;
@@ -77,29 +88,64 @@ footer {
   color: #084008;
   text-align: center;
 }
+
+/* -------------- Responsive Mobile -------------- */
 @media (max-width: 500px) {
-  h1 { font-size: 2em; }
-  button { font-size: 1em; padding: 8px 15px; margin-top: 8px; margin-right: 5px;}
-  #resultat { font-size: 1.1em; }
+  h1 {
+    font-size: 2em;
+    margin-top: 20px;
+  }
+
+  .container {
+    padding: 15px;
+  }
+
+  textarea {
+    height: 120px;
+    font-size: 1em;
+  }
+
+  button {
+    font-size: 1em;
+    padding: 8px 15px;
+  }
+
+  #resultat {
+    font-size: 1.1em;
+    padding: 10px;
+  }
+
+  .boutons {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
+
 <body>
 
 <h1>Traducteur Arkaün</h1>
 
 <div class="container">
-  <textarea id="frInput" placeholder="Écris une phrase en français ici..."></textarea><br>
-  <button id="translateBtn">Traduire</button>
-  <button id="viewLexiconBtn">Voir le lexique</button>
-  <button id="resetLexiconBtn">Réinitialiser le lexique</button>
-  <button id="exportLexiconBtn">Exporter le lexique</button>
+
+  <textarea id="frInput" placeholder="Écris une phrase en français ici..."></textarea>
+
+  <div class="boutons">
+    <button id="translateBtn">Traduire</button>
+    <button id="viewLexiconBtn">Voir le lexique</button>
+    <button id="resetLexiconBtn">Réinitialiser le lexique</button>
+    <button id="exportLexiconBtn">Exporter le lexique</button>
+    <button id="importLexiconBtn">Importer un lexique</button>
+  </div>
+
   <input type="file" id="importLexiconInput" accept=".csv" style="display:none;">
-  <button id="importLexiconBtn">Importer un lexique</button>
+
   <div id="resultat"></div>
+
 </div>
 
 <footer>Lexique auto-apprenant & immersif</footer>
+
 
 <script>
 /* ================= TRADUCTEUR ELF + LEXIQUE + IMPORT/EXPORT + HARMONIE ================= */
@@ -118,11 +164,10 @@ const lexiqueBase = {
   "arbre":"calen","eau":"nûr","feu":"nari","terre":"taren","montagne":"oron","mer":"lôs",
   "ciel":"elenor",
   "cheval":"ruan","épée":"brandel","epee":"brandel","bouclier":"thalar","citadelle":"umbar","ville":"siar",
-  "route":"rima","marché":"valen","marche":"valen","chant":"tinel","musique":"liriel","lumière":"loriel","lumiere":"loriel",
+  "route":"rima","marché":"valen","marche":"valen","chant":"tinel","musique":"liriel","lumière":"ariel","lumiere":"ariel",
   "ombre":"moriel","bonjour":"lómiel","adieu":"nairal","merci":"galen","s'il":"aen","s'il-vous-plaît":"aenril",
-  "s'il-vous-plait":"aenril","s'il-vous":"aen","oui":"ea","non":"na","peut-être":"sila",
+  "s'il-te-plait":"aenril","s'il-vous":"aen","oui":"ea","non":"na","peut-être":"sila",
   "maintenant":"anor","hier":"enor","demain":"oror","et":"ar","à":"an","a":"an","de":"sï","du":"sï"
-
 };
 
 /* 2. Lexique persistant */
@@ -146,24 +191,22 @@ function genererMotElfique(motFr, syllabesUtilisees, terminaisonsUtilisees){
     const s = suffixes[Math.floor(Math.random()*suffixes.length)];
     mot = r+m+s;
 
-    // Eviter répétition syllabe initiale et finale
     const debut = mot.slice(0,2);
     const fin = mot.slice(-2);
     essais++;
-    if(essais>20) break; // éviter boucle infinie
-        /* 🔥 ANTI-DOUBLONS AJOUTÉ ICI */
+    if(essais>20) break;
+
     const existeDeja = Object.values(lexique).includes(mot);
-   if(existeDeja) continue;
+    if(existeDeja) continue;
+
   } while(syllabesUtilisees.has(mot.slice(0,2)) || terminaisonsUtilisees.has(mot.slice(-2)));
 
   syllabesUtilisees.add(mot.slice(0,2));
   terminaisonsUtilisees.add(mot.slice(-2));
+
   lexique[motFr] = mot;
   sauvegarderLexique();
   return mot;
-
-
-
 }
 
 /* 5. Traduction phrase avec harmonisation */
@@ -178,7 +221,6 @@ function traduireElfique(phrase){
 
     if(lexique[mot]){
       traduction = lexique[mot];
-      // enregistrer début et fin pour harmonisation
       syllabesUtilisees.add(traduction.slice(0,2));
       terminaisonsUtilisees.add(traduction.slice(-2));
     } else {
@@ -252,7 +294,7 @@ importLexiconInput.addEventListener("change", (event)=>{
       const text = e.target.result;
       const lines = text.split(/\r?\n/);
       lines.forEach((line, idx)=>{
-          if(idx===0) return; // ignorer entête
+          if(idx===0) return;
           if(line.trim()==="") return;
           const [fr, el] = line.split(",");
           if(fr && el) lexique[fr.trim()] = el.trim();
